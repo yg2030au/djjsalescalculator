@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>销售盈亏模拟器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #eef2ff 100%); color: #1e293b; min-height: 100vh; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  .header { text-align: center; margin-bottom: 28px; }
+  .header h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: #94a3b8; }
+
+  .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; padding: 20px; margin-bottom: 16px; }
+  .section-title { font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .badge { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .badge-blue { background: #dbeafe; color: #2563eb; }
+  .badge-green { background: #d1fae5; color: #059669; }
+  .badge-amber { background: #fef3c7; color: #d97706; }
+  .badge-purple { background: #ede9fe; color: #7c3aed; }
+  .badge-rose { background: #ffe4e6; color: #e11d48; }
+
+  .row-group { background: #f8fafc; border-radius: 12px; padding: 12px; margin-bottom: 8px; display: grid; gap: 8px; align-items: end; }
+  .team-row { grid-template-columns: 2fr 1fr 1.5fr 1.5fr 36px; }
+  .tier-row { grid-template-columns: 60px 1fr 1fr 36px; }
+
+  label { display: block; font-size: 11px; font-weight: 500; color: #94a3b8; margin-bottom: 4px; }
+  input { width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; font-size: 13px; outline: none; transition: all 0.15s; background: #fff; color: #334155; }
+  input:focus { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+  .btn-remove { background: none; border: none; color: #f87171; font-size: 16px; cursor: pointer; padding: 4px; border-radius: 4px; line-height: 1; }
+  .btn-remove:hover { background: #fef2f2; color: #dc2626; }
+  .btn-add { background: none; border: none; color: #3b82f6; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 8px; padding: 4px 0; }
+  .btn-add:hover { color: #1d4ed8; }
+
+  .param-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .param-hint { margin-top: 10px; display: flex; gap: 20px; font-size: 12px; color: #94a3b8; }
+  .param-hint span { color: #475569; font-weight: 500; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .note { font-size: 11px; color: #94a3b8; margin-bottom: 10px; }
+
+  .result-pnl { border-radius: 16px; padding: 24px; border: 2px solid; margin-bottom: 16px; }
+  .result-pnl.profit { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border-color: #6ee7b7; }
+  .result-pnl.loss { background: linear-gradient(135deg, #fef2f2, #ffe4e6); border-color: #fca5a5; }
+  .result-label { font-size: 13px; color: #64748b; margin-bottom: 4px; }
+  .result-value { font-size: 36px; font-weight: 800; line-height: 1.1; }
+  .result-value.profit { color: #059669; }
+  .result-value.loss { color: #dc2626; }
+  .result-tag { font-size: 13px; font-weight: 600; margin-top: 4px; }
+
+  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; }
+  .summary-row .lbl { color: #64748b; }
+  .summary-row .val { font-weight: 500; color: #1e293b; }
+  .summary-divider { border-top: 1px solid #e2e8f0; margin: 6px 0; }
+
+  .detail-card { background: #f8fafc; border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+  .detail-card h4 { font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; font-size: 12px; }
+  .detail-grid .dk { color: #94a3b8; }
+  .detail-grid .dv { text-align: right; font-weight: 500; }
+
+  .text-green { color: #059669; }
+  .text-red { color: #dc2626; }
+  .text-orange { color: #d97706; }
+  .text-bold { font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const defaultLevels = [
+  { name: "Junior Sales", count: 4, salary: 60000, avgUnits: 6 },
+  { name: "Sales Executive", count: 3, salary: 84000, avgUnits: 9 },
+  { name: "Senior Sales", count: 2, salary: 108000, avgUnits: 12 },
+  { name: "Sales Manager", count: 1, salary: 144000, avgUnits: 15 },
+];
+
+const defaultTiers = [
+  { threshold: 8, rate: 1 },
+  { threshold: 10, rate: 2 },
+  { threshold: 13, rate: 3 },
+];
+
+function App() {
+  const [levels, setLevels] = useState(defaultLevels);
+  const [tiers, setTiers] = useState(defaultTiers);
+  const [listPrice, setListPrice] = useState(50000);
+  const [discountRate, setDiscountRate] = useState(5);
+  const [marginRate, setMarginRate] = useState(20);
+  const [topSellerBonus, setTopSellerBonus] = useState(3000);
+  const [fixedCost, setFixedCost] = useState(100000);
+
+  const updateLevel = (i, field, value) => {
+    const next = [...levels];
+    next[i] = { ...next[i], [field]: field === "name" ? value : Number(value) || 0 };
+    setLevels(next);
+  };
+  const addLevel = () => setLevels([...levels, { name: "Level " + (levels.length + 1), count: 1, salary: 60000, avgUnits: 5 }]);
+  const removeLevel = (i) => { if (levels.length > 1) setLevels(levels.filter((_, idx) => idx !== i)); };
+
+  const updateTier = (i, field, value) => {
+    const next = [...tiers];
+    next[i] = { ...next[i], [field]: Number(value) || 0 };
+    setTiers(next);
+  };
+  const addTier = () => setTiers([...tiers, { threshold: 0, rate: 0 }]);
+  const removeTier = (i) => { if (tiers.length > 1) setTiers(tiers.filter((_, idx) => idx !== i)); };
+
+  const results = useMemo(() => {
+    const netPrice = listPrice * (1 - discountRate / 100);
+    const profitPerUnit = netPrice * (marginRate / 100);
+    const sortedTiers = [...tiers].sort((a, b) => b.threshold - a.threshold);
+
+    const levelResults = levels.map((lv) => {
+      const totalUnits = lv.count * lv.avgUnits;
+      const totalRevenue = totalUnits * netPrice;
+      const totalProfit = totalUnits * profitPerUnit;
+      const totalSalary = lv.count * (lv.salary / 12);
+
+      let commissionRate = 0;
+      for (const t of sortedTiers) {
+        if (lv.avgUnits >= t.threshold) { commissionRate = t.rate; break; }
+      }
+      const commissionPerPerson = lv.avgUnits * netPrice * (commissionRate / 100);
+      const totalCommission = lv.count * commissionPerPerson;
+      const totalCost = totalSalary + totalCommission;
+
+      return { ...lv, totalUnits, totalRevenue, totalProfit, totalSalary, commissionRate, commissionPerPerson, totalCommission, totalCost };
+    });
+
+    const totalUnits = levelResults.reduce((s, r) => s + r.totalUnits, 0);
+    const totalRevenue = levelResults.reduce((s, r) => s + r.totalRevenue, 0);
+    const totalGrossProfit = levelResults.reduce((s, r) => s + r.totalProfit, 0);
+    const totalSalary = levelResults.reduce((s, r) => s + r.totalSalary, 0);
+    const totalCommission = levelResults.reduce((s, r) => s + r.totalCommission, 0);
+    const totalSalesCost = totalSalary + totalCommission + topSellerBonus;
+    const totalCostAll = totalSalesCost + fixedCost;
+    const netPnL = totalGrossProfit - totalCostAll;
+
+    return { netPrice, profitPerUnit, levelResults, totalUnits, totalRevenue, totalGrossProfit, totalSalary, totalCommission, topSellerBonus, totalSalesCost, fixedCost, totalCostAll, netPnL };
+  }, [levels, tiers, listPrice, discountRate, marginRate, topSellerBonus, fixedCost]);
+
+  const fmt = (n) => "$" + n.toLocaleString("en-AU", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmtPct = (n) => n.toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+  const totalHeadcount = levels.reduce((s, l) => s + l.count, 0);
+
+  return (
+    <div className="container">
+      <div className="header">
+        <h1>销售盈亏模拟器</h1>
+        <p>Sales Profit & Loss Simulator</p>
+      </div>
+
+      <div className="grid">
+        {/* LEFT: INPUTS */}
+        <div>
+          {/* 1. Team */}
+          <div className="card">
+            <div className="section-title"><span className="badge badge-blue">1</span>销售团队结构</div>
+            {levels.map((lv, i) => (
+              <div key={i} className="row-group team-row">
+                <div><label>职级名称</label><input value={lv.name} onChange={(e) => updateLevel(i, "name", e.target.value)} /></div>
+                <div><label>人数</label><input type="number" min="0" value={lv.count} onChange={(e) => updateLevel(i, "count", e.target.value)} /></div>
+                <div><label>年薪（$）</label><input type="number" min="0" value={lv.salary} onChange={(e) => updateLevel(i, "salary", e.target.value)} /></div>
+                <div><label>平均月销量（台）</label><input type="number" min="0" value={lv.avgUnits} onChange={(e) => updateLevel(i, "avgUnits", e.target.value)} /></div>
+                <button className="btn-remove" onClick={() => removeLevel(i)} title="删除">✕</button>
+              </div>
+            ))}
+            <button className="btn-add" onClick={addLevel}>+ 添加职级</button>
+          </div>
+
+          {/* 2. Product */}
+          <div className="card">
+            <div className="section-title"><span className="badge badge-green">2</span>产品与成交参数</div>
+            <div className="param-grid">
+              <div><label>单台平均标价（$）</label><input type="number" min="0" value={listPrice} onChange={(e) => setListPrice(Number(e.target.value) || 0)} /></div>
+              <div><label>平均折扣率（%）</label><input type="number" min="0" max="100" value={discountRate} onChange={(e) => setDiscountRate(Number(e.target.value) || 0)} /></div>
+              <div><label>单台净利率（%）</label><input type="number" min="0" max="100" value={marginRate} onChange={(e) => setMarginRate(Number(e.target.value) || 0)} /></div>
+            </div>
+            <div className="param-hint">
+              <div>折后均价：<span>{fmt(results.netPrice)}</span></div>
+              <div>单台毛利：<span>{fmt(results.profitPerUnit)}</span></div>
+            </div>
+          </div>
+
+          {/* 3. Commission */}
+          <div className="card">
+            <div className="section-title"><span className="badge badge-amber">3</span>提成结构</div>
+            <div className="note">当销量达到某档位起始销量时，该销售全部销量按对应比例提成</div>
+            {tiers.map((t, i) => (
+              <div key={i} className="row-group tier-row">
+                <div style={{display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",fontWeight:600,color:"#94a3b8"}}>Tier {i+1}</div>
+                <div><label>起始销量（台）</label><input type="number" min="0" value={t.threshold} onChange={(e) => updateTier(i, "threshold", e.target.value)} /></div>
+                <div><label>提成比例（%）</label><input type="number" min="0" step="0.1" value={t.rate} onChange={(e) => updateTier(i, "rate", e.target.value)} /></div>
+                <button className="btn-remove" onClick={() => removeTier(i)} title="删除">✕</button>
+              </div>
+            ))}
+            <button className="btn-add" onClick={addTier}>+ 添加档位</button>
+          </div>
+
+          {/* 4 & 5 */}
+          <div className="two-col">
+            <div className="card" style={{marginBottom:0}}>
+              <div className="section-title"><span className="badge badge-purple">4</span>销冠奖励</div>
+              <label>月度销冠奖励金额（$）</label>
+              <input type="number" min="0" value={topSellerBonus} onChange={(e) => setTopSellerBonus(Number(e.target.value) || 0)} />
+            </div>
+            <div className="card" style={{marginBottom:0}}>
+              <div className="section-title"><span className="badge badge-rose">5</span>公司其他成本</div>
+              <label>每月固定成本（$）</label>
+              <input type="number" min="0" value={fixedCost} onChange={(e) => setFixedCost(Number(e.target.value) || 0)} />
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: RESULTS */}
+        <div>
+          {/* PnL */}
+          <div className={"result-pnl " + (results.netPnL >= 0 ? "profit" : "loss")}>
+            <div className="result-label">月度盈亏结果</div>
+            <div className={"result-value " + (results.netPnL >= 0 ? "profit" : "loss")}>
+              {results.netPnL >= 0 ? "+" : ""}{fmt(results.netPnL)}
+            </div>
+            <div className={"result-tag " + (results.netPnL >= 0 ? "text-green" : "text-red")}>
+              {results.netPnL >= 0 ? "盈利" : "亏损"}
+            </div>
+          </div>
+
+          {/* Revenue */}
+          <div className="card">
+            <div style={{fontSize:"13px",fontWeight:600,color:"#334155",marginBottom:"10px"}}>收入概览</div>
+            <div className="summary-row"><span className="lbl">总销量</span><span className="val">{results.totalUnits} 台</span></div>
+            <div className="summary-row"><span className="lbl">总销售额</span><span className="val">{fmt(results.totalRevenue)}</span></div>
+            <div className="summary-divider"></div>
+            <div className="summary-row"><span className="lbl text-bold">总毛利</span><span className="val text-green text-bold">{fmt(results.totalGrossProfit)}</span></div>
+          </div>
+
+          {/* Costs */}
+          <div className="card">
+            <div style={{fontSize:"13px",fontWeight:600,color:"#334155",marginBottom:"10px"}}>成本明细</div>
+            <div className="summary-row"><span className="lbl">销售固定工资（月）</span><span className="val">{fmt(results.totalSalary)}</span></div>
+            <div className="summary-row"><span className="lbl">销售提成</span><span className="val">{fmt(results.totalCommission)}</span></div>
+            <div className="summary-row"><span className="lbl">销冠奖励</span><span className="val">{fmt(results.topSellerBonus)}</span></div>
+            <div className="summary-divider"></div>
+            <div className="summary-row"><span className="lbl text-bold">销售部总成本</span><span className="val text-orange text-bold">{fmt(results.totalSalesCost)}</span></div>
+            <div className="summary-row"><span className="lbl">公司固定成本</span><span className="val">{fmt(results.fixedCost)}</span></div>
+            <div className="summary-divider"></div>
+            <div className="summary-row"><span className="lbl text-bold">总成本</span><span className="val text-red text-bold">{fmt(results.totalCostAll)}</span></div>
+          </div>
+
+          {/* Per Level */}
+          <div className="card">
+            <div style={{fontSize:"13px",fontWeight:600,color:"#334155",marginBottom:"10px"}}>各职级明细</div>
+            {results.levelResults.map((r, i) => (
+              <div key={i} className="detail-card">
+                <h4>{r.name}</h4>
+                <div className="detail-grid">
+                  <span className="dk">人数</span><span className="dv">{r.count} 人</span>
+                  <span className="dk">人均销量</span><span className="dv">{r.avgUnits} 台</span>
+                  <span className="dk">总销量</span><span className="dv">{r.totalUnits} 台</span>
+                  <span className="dk">适用提成</span><span className="dv">{r.commissionRate}%</span>
+                  <span className="dk">工资小计（月）</span><span className="dv">{fmt(r.totalSalary)}</span>
+                  <span className="dk">提成小计</span><span className="dv">{fmt(r.totalCommission)}</span>
+                  <span className="dk">毛利贡献</span><span className="dv text-green">{fmt(r.totalProfit)}</span>
+                  <span className="dk">成本合计</span><span className="dv text-red">{fmt(r.totalCost)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* KPIs */}
+          <div className="card">
+            <div style={{fontSize:"13px",fontWeight:600,color:"#334155",marginBottom:"10px"}}>关键指标</div>
+            <div className="summary-row">
+              <span className="lbl">净利润率（占销售额）</span>
+              <span className={"val " + (results.netPnL >= 0 ? "text-green" : "text-red") + " text-bold"}>
+                {results.totalRevenue > 0 ? fmtPct(results.netPnL / results.totalRevenue * 100) : "0.00%"}
+              </span>
+            </div>
+            <div className="summary-row">
+              <span className="lbl">销售成本占毛利比</span>
+              <span className="val text-orange text-bold">
+                {results.totalGrossProfit > 0 ? fmtPct(results.totalSalesCost / results.totalGrossProfit * 100) : "0.00%"}
+              </span>
+            </div>
+            <div className="summary-row">
+              <span className="lbl">人均月产值</span>
+              <span className="val">{totalHeadcount > 0 ? fmt(results.totalRevenue / totalHeadcount) : "$0"}</span>
+            </div>
+            <div className="summary-row">
+              <span className="lbl">盈亏平衡总销量</span>
+              <span className="val">{results.profitPerUnit > 0 ? Math.ceil(results.totalCostAll / results.profitPerUnit) + " 台" : "N/A"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
